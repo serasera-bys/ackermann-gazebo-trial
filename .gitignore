@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.build/
+install/
+log/
+colcon/
+
+experiments/latest_metrics.json
+experiments/results/
+
+*.log
+*.bag
+*.db
+.DS_Store
