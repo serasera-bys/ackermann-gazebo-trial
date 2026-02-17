@@ -1,0 +1,10 @@
+{
+  "trained_at": "bootstrap",
+  "sample_count": 0,
+  "k_linear": 0.8,
+  "k_heading": 1.2,
+  "k_avoid": 0.6,
+  "max_linear_speed": 0.8,
+  "max_angular_speed": 0.7,
+  "avoid_distance": 1.1
+}

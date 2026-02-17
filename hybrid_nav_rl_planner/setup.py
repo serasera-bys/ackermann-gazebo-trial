@@ -9,6 +9,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         (f"share/{package_name}", ["package.xml"]),
+        (f"share/{package_name}/config", ["config/rl_policy.json"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -20,7 +21,8 @@ setup(
     entry_points={
         "console_scripts": [
             "rl_planner_node = hybrid_nav_rl_planner.rl_planner_node:main",
+            "dataset_collector_node = hybrid_nav_rl_planner.dataset_collector_node:main",
+            "train_stub = hybrid_nav_rl_planner.train_stub:main",
         ],
     },
 )
-

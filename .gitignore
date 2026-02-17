@@ -10,6 +10,9 @@ colcon/
 
 experiments/latest_metrics.json
 experiments/results/
+experiments/episode_metrics.jsonl
+experiments/rl_dataset*.jsonl
+experiments/rl_policy.json
 
 *.log
 *.bag

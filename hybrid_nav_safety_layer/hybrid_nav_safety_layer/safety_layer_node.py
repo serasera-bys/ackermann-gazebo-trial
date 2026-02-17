@@ -4,6 +4,7 @@ from typing import Optional
 import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
 
@@ -16,6 +17,7 @@ class SafetyLayerNode(Node):
         self.declare_parameter("output_topic", "/cmd_vel")
         self.declare_parameter("scan_topic", "/scan")
         self.declare_parameter("stop_distance", 0.6)
+        self.declare_parameter("hard_stop_distance", 0.35)
         self.declare_parameter("scan_timeout_sec", 0.5)
         self.declare_parameter("max_linear_speed", 1.0)
         self.declare_parameter("max_angular_speed", 0.8)
@@ -24,9 +26,15 @@ class SafetyLayerNode(Node):
         self.output_topic = str(self.get_parameter("output_topic").value)
         self.scan_topic = str(self.get_parameter("scan_topic").value)
         self.stop_distance = float(self.get_parameter("stop_distance").value)
+        self.hard_stop_distance = float(self.get_parameter("hard_stop_distance").value)
         self.scan_timeout_sec = float(self.get_parameter("scan_timeout_sec").value)
         self.max_linear_speed = float(self.get_parameter("max_linear_speed").value)
         self.max_angular_speed = float(self.get_parameter("max_angular_speed").value)
+        if self.hard_stop_distance >= self.stop_distance:
+            self.get_logger().warn(
+                "hard_stop_distance >= stop_distance, forcing hard_stop_distance = stop_distance - 0.05"
+            )
+            self.hard_stop_distance = max(0.0, self.stop_distance - 0.05)
 
         self.last_scan_time: Optional[rclpy.time.Time] = None
         self.last_scan_min_range: Optional[float] = None
@@ -34,11 +42,12 @@ class SafetyLayerNode(Node):
         self.cmd_pub = self.create_publisher(Twist, self.output_topic, 10)
         self.guard_pub = self.create_publisher(Bool, "/safety_layer/intervention", 10)
         self.create_subscription(Twist, self.input_topic, self.on_raw_cmd, 10)
-        self.create_subscription(LaserScan, self.scan_topic, self.on_scan, 10)
+        # LaserScan from simulation typically uses SensorDataQoS (best effort).
+        self.create_subscription(LaserScan, self.scan_topic, self.on_scan, qos_profile_sensor_data)
 
         self.get_logger().info(
             f"Safety layer started: {self.input_topic} -> {self.output_topic}, "
-            f"stop_distance={self.stop_distance:.2f} m"
+            f"stop_distance={self.stop_distance:.2f} m, hard_stop_distance={self.hard_stop_distance:.2f} m"
         )
 
     def on_scan(self, msg: LaserScan) -> None:
@@ -53,9 +62,16 @@ class SafetyLayerNode(Node):
 
         intervention = False
         if self._has_recent_scan() and self.last_scan_min_range is not None:
-            if self.last_scan_min_range < self.stop_distance and out.linear.x > 0.0:
-                out.linear.x = 0.0
-                intervention = True
+            if out.linear.x > 0.0:
+                if self.last_scan_min_range <= self.hard_stop_distance:
+                    out.linear.x = 0.0
+                    intervention = True
+                elif self.last_scan_min_range < self.stop_distance:
+                    span = max(self.stop_distance - self.hard_stop_distance, 1e-3)
+                    ratio = (self.last_scan_min_range - self.hard_stop_distance) / span
+                    ratio = self._clamp(ratio, 0.15, 1.0)
+                    out.linear.x *= ratio
+                    intervention = True
 
         self.cmd_pub.publish(out)
         self.guard_pub.publish(Bool(data=intervention))
@@ -81,4 +97,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

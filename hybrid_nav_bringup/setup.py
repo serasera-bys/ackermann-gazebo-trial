@@ -19,5 +19,9 @@ setup(
     description="Bringup launch package for hybrid navigation MVP.",
     license="Apache-2.0",
     tests_require=["pytest"],
+    entry_points={
+        "console_scripts": [
+            "episode_manager_node = hybrid_nav_bringup.episode_manager_node:main",
+        ],
+    },
 )
-
