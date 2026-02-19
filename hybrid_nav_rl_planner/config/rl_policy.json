@@ -1,7 +1,7 @@
 {
   "trained_at": "2026-02-19T01:54:31.313715+00:00",
   "training_method": "reward_weighted_regression_v2",
-  "dataset_path": "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl",
+  "dataset_path": "~/.ros/hybrid_nav_robot/experiments/rl_dataset.jsonl",
   "preset_label": "uplift_v1",
   "episode_count": 22,
   "fit_sample_count": 9828,

@@ -1,12 +1,21 @@
 import argparse
 import json
 import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 
+def _default_experiments_dir() -> Path:
+    env_value = os.environ.get("HYBRID_NAV_EXPERIMENTS_DIR", "").strip()
+    if env_value:
+        return Path(env_value)
+    return Path.home() / ".ros" / "hybrid_nav_robot" / "experiments"
+
+
 def parse_args() -> argparse.Namespace:
+    default_dir = _default_experiments_dir()
     parser = argparse.ArgumentParser(
         description=(
             "Offline reward-weighted trainer for hybrid navigation policy gains. "
@@ -16,11 +25,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dataset",
-        default="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl",
+        default=str(default_dir / "rl_dataset.jsonl"),
     )
     parser.add_argument(
         "--output",
-        default="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json",
+        default=str(default_dir / "rl_policy.json"),
     )
     parser.add_argument("--max-linear", type=float, default=0.8)
     parser.add_argument("--max-angular", type=float, default=0.7)

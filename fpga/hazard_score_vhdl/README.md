@@ -16,7 +16,8 @@ It is not wired into ROS2 runtime yet.
 ## Quick test with GHDL
 
 ```bash
-cd /home/bernard/ros2_ws/src/hybrid_nav_robot/fpga/hazard_score_vhdl
+WS_ROOT=~/ros2_ws
+cd "$WS_ROOT/src/hybrid_nav_robot/fpga/hazard_score_vhdl"
 ghdl -a --std=08 hazard_score.vhd tb_hazard_score.vhd
 ghdl -e --std=08 tb_hazard_score
 ghdl -r --std=08 tb_hazard_score --assert-level=error

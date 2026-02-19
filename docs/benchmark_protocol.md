@@ -37,15 +37,16 @@ Each scenario runs:
 ## Commands
 
 ```bash
-cd /home/bernard/ros2_ws
+WS_ROOT=~/ros2_ws
+cd "$WS_ROOT"
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 
 # Optional overrides:
 # EPISODES_PER_RUN=10 MAX_WAIT_SEC=240
 # EPISODE_MAX_DURATION_SEC=60.0
-# RL_POLICY_FILE=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json
-# RESUME_RUN_DIR=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp>
+# RL_POLICY_FILE=$WS_ROOT/src/hybrid_nav_robot/experiments/rl_policy.json
+# RESUME_RUN_DIR=$WS_ROOT/src/hybrid_nav_robot/experiments/results/run_<timestamp>
 # STRICT_COMPLETION=false
 ./src/hybrid_nav_robot/experiments/run_benchmark.sh
 ```

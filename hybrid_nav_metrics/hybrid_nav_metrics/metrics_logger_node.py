@@ -12,13 +12,18 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool, String
 
 
+def _default_experiment_file(filename: str) -> str:
+    base = Path.home() / ".ros" / "hybrid_nav_robot" / "experiments"
+    return str(base / filename)
+
+
 class MetricsLoggerNode(Node):
     def __init__(self) -> None:
         super().__init__("hybrid_metrics_logger")
 
         self.declare_parameter(
             "output_file",
-            "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/latest_metrics.json",
+            _default_experiment_file("latest_metrics.json"),
         )
         self.declare_parameter("odom_topic", "/odom")
         self.declare_parameter("cmd_topic", "/cmd_vel")
@@ -28,7 +33,7 @@ class MetricsLoggerNode(Node):
         self.declare_parameter("use_episode_events", True)
         self.declare_parameter(
             "episode_summary_file",
-            "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/episode_metrics.jsonl",
+            _default_experiment_file("episode_metrics.jsonl"),
         )
         self.declare_parameter("append_episode_summary", False)
         self.declare_parameter("planner_mode_label", "")

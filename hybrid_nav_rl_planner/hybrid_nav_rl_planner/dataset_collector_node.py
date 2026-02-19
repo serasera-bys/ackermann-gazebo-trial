@@ -13,13 +13,18 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
 
+def _default_experiment_file(filename: str) -> str:
+    base = Path.home() / ".ros" / "hybrid_nav_robot" / "experiments"
+    return str(base / filename)
+
+
 class DatasetCollectorNode(Node):
     def __init__(self) -> None:
         super().__init__("hybrid_rl_dataset_collector")
 
         self.declare_parameter(
             "output_file",
-            "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl",
+            _default_experiment_file("rl_dataset.jsonl"),
         )
         self.declare_parameter("goal_x", 8.0)
         self.declare_parameter("goal_y", 0.0)

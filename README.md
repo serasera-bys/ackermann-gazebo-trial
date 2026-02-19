@@ -25,7 +25,8 @@ goal -> planner (/cmd_vel_raw) -> safety layer (/cmd_vel) -> ackermann control a
 ## Quick start
 
 ```bash
-cd /home/bernard/ros2_ws
+WS_ROOT=~/ros2_ws
+cd "$WS_ROOT"
 colcon build --packages-select \
   hybrid_nav_bringup \
   hybrid_nav_rule_planner \
@@ -101,8 +102,8 @@ Default `reset_mode` is `model_only` so controllers stay alive between episodes.
 
 ```bash
 ros2 run hybrid_nav_rl_planner train_stub \
-  --dataset /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl \
-  --output /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json \
+  --dataset "$WS_ROOT/src/hybrid_nav_robot/experiments/rl_dataset.jsonl" \
+  --output "$WS_ROOT/src/hybrid_nav_robot/experiments/rl_policy.json" \
   --reward-progress-scale 6.0 \
   --reward-goal-bonus 5.0 \
   --penalty-collision 2.0 \
@@ -116,21 +117,21 @@ ros2 run hybrid_nav_rl_planner train_stub \
 ```bash
 ros2 launch hybrid_nav_bringup hybrid_nav_demo.launch.py \
   planner_mode:=rl goal_x:=6.0 goal_y:=2.0 \
-  rl_policy_file:=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json
+  rl_policy_file:="$WS_ROOT/src/hybrid_nav_robot/experiments/rl_policy.json"
 ```
 
 4) Analyze RL failures from benchmark episodes:
 
 ```bash
-python3 /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/analyze_rl_failures.py \
-  --input /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp> \
+python3 "$WS_ROOT/src/hybrid_nav_robot/experiments/analyze_rl_failures.py" \
+  --input "$WS_ROOT/src/hybrid_nav_robot/experiments/results/run_<timestamp>" \
   --planner-mode rl
 ```
 
 5) One-shot train + eval orchestration:
 
 ```bash
-cd /home/bernard/ros2_ws
+cd "$WS_ROOT"
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ./src/hybrid_nav_robot/experiments/train_and_eval_rl.sh
@@ -155,7 +156,7 @@ ros2 launch hybrid_nav_bringup hybrid_nav_demo.launch.py \
 - Watch metrics JSON:
 
 ```bash
-tail -f /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/latest_metrics.json
+tail -f "$WS_ROOT/src/hybrid_nav_robot/experiments/latest_metrics.json"
 ```
 
 Look for `goal_reached: true` and `goal_distance_m` near zero.
@@ -170,7 +171,7 @@ ros2 topic echo /ackermann_steering_controller/odometry
 
 Metrics are written to:
 
-`/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/latest_metrics.json`
+`$WS_ROOT/src/hybrid_nav_robot/experiments/latest_metrics.json`
 
 Fields include:
 - goal_distance_m, goal_reached, time_to_goal_sec
@@ -180,7 +181,7 @@ Fields include:
 ## Benchmark runner
 
 ```bash
-cd /home/bernard/ros2_ws
+cd "$WS_ROOT"
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ./src/hybrid_nav_robot/experiments/run_benchmark.sh
@@ -193,8 +194,8 @@ The runner executes:
 
 Useful overrides:
 - quick smoke run: `EPISODES_PER_RUN=3 MAX_WAIT_SEC=240 ./src/hybrid_nav_robot/experiments/run_benchmark.sh`
-- use specific policy artifact: `RL_POLICY_FILE=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json ...`
-- resume interrupted run dir: `RESUME_RUN_DIR=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp> ./src/hybrid_nav_robot/experiments/run_benchmark.sh`
+- use specific policy artifact: `RL_POLICY_FILE=$WS_ROOT/src/hybrid_nav_robot/experiments/rl_policy.json ...`
+- resume interrupted run dir: `RESUME_RUN_DIR=$WS_ROOT/src/hybrid_nav_robot/experiments/results/run_<timestamp> ./src/hybrid_nav_robot/experiments/run_benchmark.sh`
 - allow partial run to exit `0`: `STRICT_COMPLETION=false ...`
 
 Canonical outputs:

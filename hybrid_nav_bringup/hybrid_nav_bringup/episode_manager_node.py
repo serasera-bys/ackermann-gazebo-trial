@@ -4,13 +4,23 @@ import random
 import re
 import subprocess
 import time
+from pathlib import Path
 
 import rclpy
+from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
+
+
+def _default_controller_params_file() -> str:
+    try:
+        share = Path(get_package_share_directory("ackermann_bringup"))
+        return str(share / "config" / "ros2_controllers.yaml")
+    except PackageNotFoundError:
+        return "ackermann_bringup/config/ros2_controllers.yaml"
 
 
 class EpisodeManagerNode(Node):
@@ -50,7 +60,7 @@ class EpisodeManagerNode(Node):
         self.declare_parameter("controller_manager_name", "/controller_manager")
         self.declare_parameter(
             "controller_params_file",
-            "/home/bernard/ros2_ws/install/ackermann_bringup/share/ackermann_bringup/config/ros2_controllers.yaml",
+            _default_controller_params_file(),
         )
         self.declare_parameter("controller_manager_timeout_sec", 120.0)
         self.declare_parameter("controller_service_call_timeout_sec", 30.0)

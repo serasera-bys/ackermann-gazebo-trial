@@ -10,6 +10,21 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    default_experiments_dir = os.environ.get(
+        "HYBRID_NAV_EXPERIMENTS_DIR",
+        os.path.join(repo_root, "experiments"),
+    )
+    default_metrics_output_file = os.path.join(default_experiments_dir, "latest_metrics.json")
+    default_metrics_episode_summary_file = os.path.join(
+        default_experiments_dir,
+        "episode_metrics.jsonl",
+    )
+    default_dataset_output_file = os.path.join(default_experiments_dir, "rl_dataset.jsonl")
+    default_rl_policy_file = os.environ.get(
+        "HYBRID_NAV_POLICY_FILE",
+        os.path.join(default_experiments_dir, "rl_policy.json"),
+    )
     controller_params_file = os.path.join(
         get_package_share_directory("ackermann_bringup"),
         "config",
@@ -257,18 +272,18 @@ def generate_launch_description():
         DeclareLaunchArgument("reach_tolerance", default_value="0.25"),
         DeclareLaunchArgument(
             "metrics_output_file",
-            default_value="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/latest_metrics.json",
+            default_value=default_metrics_output_file,
         ),
         DeclareLaunchArgument(
             "metrics_episode_summary_file",
-            default_value="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/episode_metrics.jsonl",
+            default_value=default_metrics_episode_summary_file,
         ),
         DeclareLaunchArgument("metrics_append_episode_summary", default_value="false"),
         DeclareLaunchArgument("benchmark_scenario_label", default_value="default"),
         DeclareLaunchArgument("enable_dataset_collection", default_value="false"),
         DeclareLaunchArgument(
             "dataset_output_file",
-            default_value="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl",
+            default_value=default_dataset_output_file,
         ),
         DeclareLaunchArgument("dataset_cmd_topic", default_value="/cmd_vel"),
         DeclareLaunchArgument("dataset_flush_every", default_value="50"),
@@ -310,7 +325,7 @@ def generate_launch_description():
         DeclareLaunchArgument("reverse_turn_mode", default_value="auto"),
         DeclareLaunchArgument(
             "rl_policy_file",
-            default_value="/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json",
+            default_value=default_rl_policy_file,
         ),
         DeclareLaunchArgument("enable_metrics", default_value="true"),
         DeclareLaunchArgument("odom_topic", default_value="/ackermann_steering_controller/odometry"),

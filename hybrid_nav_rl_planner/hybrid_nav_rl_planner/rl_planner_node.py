@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -10,6 +11,13 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
+
+
+def _default_policy_file() -> str:
+    env_value = os.environ.get("HYBRID_NAV_POLICY_FILE", "").strip()
+    if env_value:
+        return env_value
+    return str(Path.home() / ".ros" / "hybrid_nav_robot" / "experiments" / "rl_policy.json")
 
 
 class RLPolicyPlanner(Node):
@@ -27,7 +35,7 @@ class RLPolicyPlanner(Node):
         self.declare_parameter("scan_topic", "/scan")
         self.declare_parameter(
             "policy_file",
-            "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json",
+            _default_policy_file(),
         )
         self.declare_parameter("default_k_linear", 0.8)
         self.declare_parameter("default_k_heading", 1.2)
