@@ -32,8 +32,14 @@ Both planners also consume `episode_start` to update goal online (no node restar
     - goal bonus,
     - collision/safety penalty,
     - stuck-step penalty,
-    - stuck-terminal penalty.
-- Policy artifact: `rl_policy.json` (gains + metadata).
+    - stuck-terminal penalty,
+    - angular oscillation penalty.
+- Policy artifact: `rl_policy.json` (gains + metadata), including:
+  - `k_linear`, `k_heading`, `k_avoid`,
+  - `k_front_brake` (obstacle-proximity brake term),
+  - `k_heading_rate_limit` (heading slew limiter),
+  - `training_stats`.
 - RL planner: inference-only policy execution from saved policy file.
+- Failure analysis helper: `experiments/analyze_rl_failures.py` on benchmark episode summaries.
 
 This is offline RL-style training, not online learning inside Gazebo runtime loop.

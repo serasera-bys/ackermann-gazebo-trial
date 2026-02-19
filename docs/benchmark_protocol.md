@@ -10,6 +10,7 @@ on the same Ackermann ROS2/Gazebo stack.
 - `reset_mode:=model_only`
 - `episode_fallback_all_reset_on_rearm_timeout:=true`
 - `episode_wait_for_controllers_active:=true`
+- `episode_max_duration_sec:=60.0`
 - `reset_pause_sec:=0.6`
 - safety guard active (`stop_distance:=0.50`, `hard_stop_distance:=0.20`)
 - collector disabled during benchmark (`enable_dataset_collection:=false`)
@@ -42,9 +43,17 @@ source install/setup.bash
 
 # Optional overrides:
 # EPISODES_PER_RUN=10 MAX_WAIT_SEC=240
+# EPISODE_MAX_DURATION_SEC=60.0
+# RL_POLICY_FILE=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json
 # RESUME_RUN_DIR=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp>
 # STRICT_COMPLETION=false
 ./src/hybrid_nav_robot/experiments/run_benchmark.sh
+```
+
+RL uplift helper (collect/train/eval/analyze):
+
+```bash
+./src/hybrid_nav_robot/experiments/train_and_eval_rl.sh
 ```
 
 Behavior notes:

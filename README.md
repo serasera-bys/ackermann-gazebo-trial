@@ -1,6 +1,6 @@
 # Hybrid Autonomous Mobile Robot (ROS2)
 
-A focused ROS2 project that compares a rule-based planner vs an RL-stub planner under a safety layer, using the Ackermann simulation stack.
+A focused ROS2 project that compares a rule-based planner vs an offline-trained RL planner under a safety layer, using the Ackermann simulation stack.
 
 ## What it does
 
@@ -18,7 +18,7 @@ goal -> planner (/cmd_vel_raw) -> safety layer (/cmd_vel) -> ackermann control a
 
 - hybrid_nav_bringup: launch orchestration
 - hybrid_nav_rule_planner: rule-based goal-seeking planner
-- hybrid_nav_rl_planner: RL stub pipeline (collector + trainer + policy planner)
+- hybrid_nav_rl_planner: offline RL pipeline (collector + trainer + policy planner)
 - hybrid_nav_safety_layer: command guard and obstacle stop
 - hybrid_nav_metrics: runtime metrics logger
 
@@ -107,7 +107,8 @@ ros2 run hybrid_nav_rl_planner train_stub \
   --reward-goal-bonus 5.0 \
   --penalty-collision 2.0 \
   --penalty-stuck-step 0.25 \
-  --penalty-stuck-terminal 3.0
+  --penalty-stuck-terminal 3.0 \
+  --penalty-angular-oscillation 0.08
 ```
 
 3) Run RL mode with trained policy:
@@ -116,6 +117,26 @@ ros2 run hybrid_nav_rl_planner train_stub \
 ros2 launch hybrid_nav_bringup hybrid_nav_demo.launch.py \
   planner_mode:=rl goal_x:=6.0 goal_y:=2.0 \
   rl_policy_file:=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json
+```
+
+4) Analyze RL failures from benchmark episodes:
+
+```bash
+python3 /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/analyze_rl_failures.py \
+  --input /home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp> \
+  --planner-mode rl
+```
+
+5) One-shot train + eval orchestration:
+
+```bash
+cd /home/bernard/ros2_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+./src/hybrid_nav_robot/experiments/train_and_eval_rl.sh
+
+# Frozen uplift preset (default in script):
+RL_REWARD_PRESET=uplift_v1 ./src/hybrid_nav_robot/experiments/train_and_eval_rl.sh
 ```
 
 If the rule planner gets boxed-in, enable reverse recovery tuning:
@@ -172,6 +193,7 @@ The runner executes:
 
 Useful overrides:
 - quick smoke run: `EPISODES_PER_RUN=3 MAX_WAIT_SEC=240 ./src/hybrid_nav_robot/experiments/run_benchmark.sh`
+- use specific policy artifact: `RL_POLICY_FILE=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_policy.json ...`
 - resume interrupted run dir: `RESUME_RUN_DIR=/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/results/run_<timestamp> ./src/hybrid_nav_robot/experiments/run_benchmark.sh`
 - allow partial run to exit `0`: `STRICT_COMPLETION=false ...`
 
@@ -189,11 +211,69 @@ See detailed protocol:
 - `docs/benchmark_protocol.md`
 - `docs/results.md`
 
+## Current benchmark (post-uplift)
+
+Run id: `run_20260218_213347` (`20` episodes per scenario/planner, `120` total episodes).
+
+| Scenario | Planner | Episodes | Success Rate | Mean Time-to-Goal (s) |
+|---|---:|---:|---:|---:|
+| easy | rule | 20 | 1.0000 | 22.9328 |
+| easy | rl | 20 | 0.4500 | 8.4129 |
+| medium | rule | 20 | 1.0000 | 18.0256 |
+| medium | rl | 20 | 0.6500 | 10.6154 |
+| cluttered | rule | 20 | 0.9000 | 22.3666 |
+| cluttered | rl | 20 | 0.6500 | 8.9066 |
+
+RL target status:
+- easy >= `0.50`: not met (`0.45`)
+- medium >= `0.50`: met (`0.65`)
+- cluttered >= `0.30`: met (`0.65`)
+
+## Current baseline (pre-uplift)
+
+Baseline run id: `run_20260217_221631` (`3` episodes per scenario/planner).
+
+| Scenario | Planner | Episodes | Success Rate | Mean Time-to-Goal (s) |
+|---|---:|---:|---:|---:|
+| easy | rule | 3 | 1.000000 | 22.1860 |
+| easy | rl | 3 | 0.000000 | N/A |
+| medium | rule | 3 | 1.000000 | 21.1869 |
+| medium | rl | 3 | 0.333333 | 17.8006 |
+| cluttered | rule | 3 | 1.000000 | 25.4612 |
+| cluttered | rl | 3 | 0.000000 | N/A |
+
+RL uplift target for the next full benchmark:
+- easy RL success_rate >= `0.50`
+- medium RL success_rate >= `0.50`
+- cluttered RL success_rate >= `0.30`
+
+## Embedded/System skill evidence
+
+This project is an embedded-style robotics stack (not bare-metal firmware):
+- rate-limited loops
+- deterministic safety gating
+- timeout-based recovery and reset escalation
+- controller readiness checks before restarting episodes
+
+See:
+- `docs/embedded_profile.md`
+
+## VHDL companion addon
+
+Digital-design companion artifact (not in runtime loop yet):
+- `fpga/hazard_score_vhdl/hazard_score.vhd`
+- `fpga/hazard_score_vhdl/tb_hazard_score.vhd`
+- `fpga/hazard_score_vhdl/README.md`
+
 ## Notes
 
 - Training is offline and reward-based: collect first, train policy file, then run `planner_mode:=rl`.
 - Runtime planner is inference-only (no online learning while Gazebo is running).
 - The safety layer expects /scan. If your model does not publish LaserScan, min_obstacle_range will be -1.0 and safety will never trigger.
+
+## CV-ready bullet
+
+Built an Ackermann ROS2/Gazebo autonomous navigation stack with rule-based and offline RL planners, hard safety guard, episode reset/recovery state machine, reproducible benchmark pipeline, and a companion VHDL hazard-scoring module with testbench.
 
 ## Repo layout
 
@@ -204,3 +284,4 @@ See detailed protocol:
 - hybrid_nav_metrics/
 - experiments/
 - docs/
+- fpga/

@@ -36,6 +36,7 @@ def generate_launch_description():
     episode_goal_progress_distance = LaunchConfiguration("episode_goal_progress_distance")
     episode_stuck_timeout_sec = LaunchConfiguration("episode_stuck_timeout_sec")
     episode_min_episode_sec = LaunchConfiguration("episode_min_episode_sec")
+    episode_max_duration_sec = LaunchConfiguration("episode_max_duration_sec")
     episode_stuck_min_cmd_linear = LaunchConfiguration("episode_stuck_min_cmd_linear")
     episode_cmd_stale_sec = LaunchConfiguration("episode_cmd_stale_sec")
     episode_event_topic = LaunchConfiguration("episode_event_topic")
@@ -196,6 +197,7 @@ def generate_launch_description():
             "scan_topic": "/scan",
             "cmd_topic": dataset_cmd_topic,
             "flush_every": dataset_flush_every,
+            "scenario_label": benchmark_scenario_label,
             "use_episode_events": True,
             "episode_event_topic": episode_event_topic,
             # Reset handled by episode_manager when using main launch.
@@ -227,6 +229,7 @@ def generate_launch_description():
             "goal_progress_distance": episode_goal_progress_distance,
             "stuck_timeout_sec": episode_stuck_timeout_sec,
             "min_episode_sec": episode_min_episode_sec,
+            "max_episode_sec": episode_max_duration_sec,
             "stuck_min_cmd_linear": episode_stuck_min_cmd_linear,
             "cmd_stale_sec": episode_cmd_stale_sec,
             "wait_for_controllers_active": episode_wait_for_controllers_active,
@@ -278,6 +281,7 @@ def generate_launch_description():
         DeclareLaunchArgument("episode_goal_progress_distance", default_value="0.12"),
         DeclareLaunchArgument("episode_stuck_timeout_sec", default_value="5.0"),
         DeclareLaunchArgument("episode_min_episode_sec", default_value="2.0"),
+        DeclareLaunchArgument("episode_max_duration_sec", default_value="0.0"),
         DeclareLaunchArgument("episode_stuck_min_cmd_linear", default_value="0.10"),
         DeclareLaunchArgument("episode_cmd_stale_sec", default_value="1.0"),
         DeclareLaunchArgument("episode_event_topic", default_value="/hybrid_nav/episode_event"),

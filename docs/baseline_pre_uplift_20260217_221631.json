@@ -1,0 +1,66 @@
+{
+  "run_id": "run_20260217_221631",
+  "episodes_per_group": 3,
+  "rows": [
+    {
+      "scenario": "easy",
+      "planner_mode": "rule",
+      "episode_count": 3,
+      "success_rate": 1.0,
+      "mean_time_to_goal_sec": 22.186,
+      "collision_or_safety_intervention_rate": 0.666667,
+      "mean_distance_traveled_m": 10.8172,
+      "mean_safety_interventions": 63.3333
+    },
+    {
+      "scenario": "easy",
+      "planner_mode": "rl",
+      "episode_count": 3,
+      "success_rate": 0.0,
+      "mean_time_to_goal_sec": null,
+      "collision_or_safety_intervention_rate": 0.333333,
+      "mean_distance_traveled_m": 0.0471,
+      "mean_safety_interventions": 1.6667
+    },
+    {
+      "scenario": "medium",
+      "planner_mode": "rule",
+      "episode_count": 3,
+      "success_rate": 1.0,
+      "mean_time_to_goal_sec": 21.1869,
+      "collision_or_safety_intervention_rate": 0.666667,
+      "mean_distance_traveled_m": 11.3115,
+      "mean_safety_interventions": 54.3333
+    },
+    {
+      "scenario": "medium",
+      "planner_mode": "rl",
+      "episode_count": 3,
+      "success_rate": 0.333333,
+      "mean_time_to_goal_sec": 17.8006,
+      "collision_or_safety_intervention_rate": 0.333333,
+      "mean_distance_traveled_m": 2.0463,
+      "mean_safety_interventions": 26.3333
+    },
+    {
+      "scenario": "cluttered",
+      "planner_mode": "rule",
+      "episode_count": 3,
+      "success_rate": 1.0,
+      "mean_time_to_goal_sec": 25.4612,
+      "collision_or_safety_intervention_rate": 1.0,
+      "mean_distance_traveled_m": 14.7724,
+      "mean_safety_interventions": 23.6667
+    },
+    {
+      "scenario": "cluttered",
+      "planner_mode": "rl",
+      "episode_count": 3,
+      "success_rate": 0.0,
+      "mean_time_to_goal_sec": null,
+      "collision_or_safety_intervention_rate": 0.666667,
+      "mean_distance_traveled_m": 1.4221,
+      "mean_safety_interventions": 49.6667
+    }
+  ]
+}

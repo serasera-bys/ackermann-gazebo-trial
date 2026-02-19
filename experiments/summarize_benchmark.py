@@ -89,7 +89,7 @@ def load_records(input_dir: Path) -> list[EpisodeRecord]:
                 except json.JSONDecodeError:
                     continue
                 reason = str(raw.get("reason", "")).strip().lower()
-                if reason not in ("goal", "stuck"):
+                if reason not in ("goal", "stuck", "timeout"):
                     continue
                 scenario = str(raw.get("scenario", "")).strip() or "default"
                 planner_mode = str(raw.get("planner_mode", "")).strip() or "unknown"

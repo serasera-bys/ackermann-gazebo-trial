@@ -19,12 +19,24 @@ LOG_DIR="${RUN_DIR}/logs"
 
 EPISODES_PER_RUN="${EPISODES_PER_RUN:-20}"
 MAX_WAIT_SEC="${MAX_WAIT_SEC:-420}"
+EPISODE_MAX_DURATION_SEC="${EPISODE_MAX_DURATION_SEC:-60.0}"
+EPISODE_PROGRESS_DISTANCE="${EPISODE_PROGRESS_DISTANCE:-0.35}"
+EPISODE_GOAL_PROGRESS_DISTANCE="${EPISODE_GOAL_PROGRESS_DISTANCE:-0.15}"
+EPISODE_STUCK_TIMEOUT_SEC="${EPISODE_STUCK_TIMEOUT_SEC:-5.0}"
+EPISODE_STUCK_MIN_CMD_LINEAR="${EPISODE_STUCK_MIN_CMD_LINEAR:-0.0}"
+EPISODE_POST_RESET_GOAL_REARM_DISTANCE="${EPISODE_POST_RESET_GOAL_REARM_DISTANCE:-1.0}"
+EPISODE_REARM_TIMEOUT_SEC="${EPISODE_REARM_TIMEOUT_SEC:-2.5}"
 SKIP_COMPLETED="${SKIP_COMPLETED:-true}"
 STRICT_COMPLETION="${STRICT_COMPLETION:-true}"
+RL_POLICY_FILE="${RL_POLICY_FILE:-${REPO_DIR}/experiments/rl_policy.json}"
+BENCHMARK_PLANNERS="${BENCHMARK_PLANNERS:-rule,rl}"
+BENCHMARK_SCENARIOS="${BENCHMARK_SCENARIOS:-easy,medium,cluttered}"
 
 mkdir -p "${RAW_DIR}" "${LOG_DIR}"
 export MPLCONFIGDIR="${RUN_DIR}/.mplconfig"
 mkdir -p "${MPLCONFIGDIR}"
+export ROS_HOME="${ROS_HOME:-${RUN_DIR}/ros_home}"
+mkdir -p "${ROS_HOME}/log"
 
 # ROS setup scripts are not nounset-safe in all environments.
 set +u
@@ -34,7 +46,7 @@ set -u
 
 planner_modes=("rule" "rl")
 scenarios=(
-  "easy|6.0|2.0|1.40|2.2|false|false|11"
+  "easy|6.0|2.0|1.40|2.2|true|true|11"
   "medium|8.0|0.0|1.60|2.4|true|true|23"
   "cluttered|6.0|-2.0|1.80|2.6|true|true|31"
 )
@@ -44,6 +56,15 @@ is_true() {
     1|true|yes|y|on) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+matches_filter() {
+  local value="$1"
+  local filter_csv="${2,,}"
+  if [[ -z "${filter_csv}" || "${filter_csv}" == "all" ]]; then
+    return 0
+  fi
+  [[ ",${filter_csv}," == *",${value},"* ]]
 }
 
 cleanup_processes() {
@@ -83,7 +104,7 @@ with open(path, "r", encoding="utf-8") as f:
             rec = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if rec.get("reason") in ("goal", "stuck"):
+        if rec.get("reason") in ("goal", "stuck", "timeout"):
             count += 1
 print(count)
 PY
@@ -99,8 +120,14 @@ fi
 declare -a incomplete_runs=()
 
 for mode in "${planner_modes[@]}"; do
+  if ! matches_filter "${mode}" "${BENCHMARK_PLANNERS}"; then
+    continue
+  fi
   for spec in "${scenarios[@]}"; do
     IFS='|' read -r scenario goal_x goal_y avoid_gain reverse_duration randomize_start randomize_obstacles seed <<<"${spec}"
+    if ! matches_filter "${scenario}" "${BENCHMARK_SCENARIOS}"; then
+      continue
+    fi
     episode_file="${RAW_DIR}/episodes_${scenario}_${mode}.jsonl"
     latest_file="${RAW_DIR}/latest_metrics_${scenario}_${mode}.json"
     launch_log="${LOG_DIR}/launch_${scenario}_${mode}.log"
@@ -122,6 +149,7 @@ for mode in "${planner_modes[@]}"; do
 
     ros2 launch hybrid_nav_bringup hybrid_nav_demo.launch.py \
       planner_mode:="${mode}" \
+      rl_policy_file:="${RL_POLICY_FILE}" \
       benchmark_scenario_label:="${scenario}" \
       goal_x:="${goal_x}" goal_y:="${goal_y}" reach_tolerance:=0.15 \
       stop_distance:=0.50 hard_stop_distance:=0.20 \
@@ -131,10 +159,13 @@ for mode in "${planner_modes[@]}"; do
       escape_forward_duration_sec:=1.8 escape_forward_speed:=0.40 \
       auto_reset_enabled:=true reset_on_goal:=true reset_on_stuck:=true \
       reset_mode:=model_only reset_pause_sec:=0.6 \
-      episode_progress_distance:=0.35 episode_goal_progress_distance:=0.15 \
-      episode_stuck_timeout_sec:=5.0 episode_stuck_min_cmd_linear:=0.0 \
-      episode_post_reset_goal_rearm_distance:=1.0 \
-      episode_rearm_timeout_sec:=2.5 \
+      episode_progress_distance:="${EPISODE_PROGRESS_DISTANCE}" \
+      episode_goal_progress_distance:="${EPISODE_GOAL_PROGRESS_DISTANCE}" \
+      episode_stuck_timeout_sec:="${EPISODE_STUCK_TIMEOUT_SEC}" \
+      episode_stuck_min_cmd_linear:="${EPISODE_STUCK_MIN_CMD_LINEAR}" \
+      episode_max_duration_sec:="${EPISODE_MAX_DURATION_SEC}" \
+      episode_post_reset_goal_rearm_distance:="${EPISODE_POST_RESET_GOAL_REARM_DISTANCE}" \
+      episode_rearm_timeout_sec:="${EPISODE_REARM_TIMEOUT_SEC}" \
       episode_fallback_all_reset_on_rearm_timeout:=true \
       episode_wait_for_controllers_active:=true \
       episode_randomization_enabled:=true \

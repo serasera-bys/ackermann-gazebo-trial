@@ -1,10 +1,61 @@
 {
-  "trained_at": "bootstrap",
-  "sample_count": 0,
-  "k_linear": 0.8,
-  "k_heading": 1.2,
-  "k_avoid": 0.6,
+  "trained_at": "2026-02-19T01:54:31.313715+00:00",
+  "training_method": "reward_weighted_regression_v2",
+  "dataset_path": "/home/bernard/ros2_ws/src/hybrid_nav_robot/experiments/rl_dataset.jsonl",
+  "preset_label": "uplift_v1",
+  "episode_count": 22,
+  "fit_sample_count": 9828,
+  "reward_mean": 0.09601301469995674,
+  "goal_episodes": 19,
+  "stuck_episodes": 0,
+  "collision_penalty_hits": 0,
+  "k_linear": 0.4,
+  "k_heading": 0.75,
+  "k_avoid": 0.2,
+  "k_front_brake": 0.6,
+  "k_heading_rate_limit": 1.0,
   "max_linear_speed": 0.8,
   "max_angular_speed": 0.7,
-  "avoid_distance": 1.1
+  "avoid_distance": 1.1,
+  "reward_spec": {
+    "progress_scale": 10.5,
+    "goal_bonus": 9.5,
+    "stuck_terminal_penalty": 2.6,
+    "collision_penalty": 1.4,
+    "stuck_step_penalty": 0.1,
+    "angular_oscillation_penalty": 0.04,
+    "collision_threshold": 0.24,
+    "stuck_progress_eps": 0.01,
+    "stuck_cmd_threshold": 0.1,
+    "reward_weight_scale": 0.7,
+    "weight_min": 0.1,
+    "weight_max": 8.0,
+    "success_episode_weight": 2.2,
+    "balance_by_scenario": true,
+    "l2_regularization": 0.001
+  },
+  "training_stats": {
+    "removed_stall_duplicates": 12,
+    "scenario_sample_counts": {
+      "easy": 3057,
+      "medium": 3411,
+      "cluttered": 3360
+    },
+    "scenario_episode_counts": {
+      "easy": 8,
+      "medium": 7,
+      "cluttered": 7
+    },
+    "scenario_weight_factors": {
+      "easy": 1.071638861629048,
+      "medium": 0.9604221635883905,
+      "cluttered": 0.975
+    },
+    "heading_slew_sample_count": 9825,
+    "heading_slew_p90": 0.2399387437390096,
+    "reward_mean": 0.09601301469995674,
+    "goal_rate": 0.8636363636363636,
+    "stall_heavy_episode_count": 0,
+    "stall_heavy_episode_rate": 0.0
+  }
 }

@@ -8,6 +8,7 @@ import time
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
@@ -34,6 +35,11 @@ class EpisodeManagerNode(Node):
         self.declare_parameter("goal_progress_distance", 0.12)
         self.declare_parameter("stuck_timeout_sec", 4.0)
         self.declare_parameter("min_episode_sec", 2.0)
+        self.declare_parameter(
+            "max_episode_sec",
+            0.0,
+            ParameterDescriptor(dynamic_typing=True),
+        )
         self.declare_parameter("stuck_min_cmd_linear", 0.10)
         self.declare_parameter("cmd_stale_sec", 1.0)
         self.declare_parameter("post_reset_goal_guard_sec", 1.0)
@@ -104,6 +110,7 @@ class EpisodeManagerNode(Node):
         )
         self.stuck_timeout_sec = max(0.5, float(self.get_parameter("stuck_timeout_sec").value))
         self.min_episode_sec = max(0.0, float(self.get_parameter("min_episode_sec").value))
+        self.max_episode_sec = max(0.0, float(self.get_parameter("max_episode_sec").value))
         self.stuck_min_cmd_linear = max(0.0, float(self.get_parameter("stuck_min_cmd_linear").value))
         self.cmd_stale_sec = max(0.1, float(self.get_parameter("cmd_stale_sec").value))
         self.post_reset_goal_guard_sec = max(
@@ -341,6 +348,12 @@ class EpisodeManagerNode(Node):
         if self.reset_on_goal and dist <= self.goal_tolerance:
             self._finish_episode("goal", dist)
             return
+
+        if self.max_episode_sec > 0.0:
+            episode_elapsed_sec = now_sec - self.episode_start_time_sec
+            if episode_elapsed_sec >= self.max_episode_sec:
+                self._finish_episode("timeout", dist)
+                return
 
         if self.reset_on_stuck and self._is_stuck(now_sec):
             self._finish_episode("stuck", dist)

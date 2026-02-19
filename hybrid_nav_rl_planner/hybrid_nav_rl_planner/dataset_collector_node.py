@@ -43,6 +43,7 @@ class DatasetCollectorNode(Node):
         self.declare_parameter("write_terminal_sample", True)
         self.declare_parameter("use_episode_events", False)
         self.declare_parameter("episode_event_topic", "/hybrid_nav/episode_event")
+        self.declare_parameter("scenario_label", "default")
         self.declare_parameter("terminal_dedup_distance_eps", 0.05)
         self.declare_parameter("terminal_dedup_time_sec", 3.0)
 
@@ -76,6 +77,7 @@ class DatasetCollectorNode(Node):
         self.write_terminal_sample = bool(self.get_parameter("write_terminal_sample").value)
         self.use_episode_events = bool(self.get_parameter("use_episode_events").value)
         self.episode_event_topic = str(self.get_parameter("episode_event_topic").value)
+        self.scenario_label = str(self.get_parameter("scenario_label").value).strip() or "default"
         self.terminal_dedup_distance_eps = max(
             0.0, float(self.get_parameter("terminal_dedup_distance_eps").value)
         )
@@ -314,6 +316,7 @@ class DatasetCollectorNode(Node):
         sample = {
             "episode_id": self.episode_id,
             "episode_time_sec": self._now_sec() - self.episode_start_time_sec,
+            "scenario": self.scenario_label,
             "goal_x": self.goal_x,
             "goal_y": self.goal_y,
             "dist": dist,
