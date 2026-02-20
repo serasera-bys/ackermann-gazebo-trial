@@ -259,6 +259,19 @@ This project is an embedded-style robotics stack (not bare-metal firmware):
 See:
 - `docs/embedded_profile.md`
 
+## Additional CV Projects
+
+Two standalone ML + embedded-style projects are included:
+
+- `edge_vision_qos/`: realtime object detection + QoS monitoring (FPS/latency/drop/alerts).
+- `predictive_maintenance_api/`: sensor-window risk scoring API (`/predict`, `/batch_predict`).
+
+Quick links:
+- `edge_vision_qos/README.md`
+- `edge_vision_qos/docs/results.md`
+- `predictive_maintenance_api/README.md`
+- `predictive_maintenance_api/docs/results.md`
+
 ## VHDL companion addon
 
 Digital-design companion artifact (not in runtime loop yet):
@@ -286,3 +299,25 @@ Built an Ackermann ROS2/Gazebo autonomous navigation stack with rule-based and o
 - experiments/
 - docs/
 - fpga/
+- edge_vision_qos/
+- predictive_maintenance_api/
+
+## CV Expansion Projects (ML + Embedded)
+
+Two additional portfolio projects are now included:
+
+- `edge_vision_qos/`: realtime vision inference + QoS monitoring (FastAPI + ONNXRuntime).
+- `predictive_maintenance_api/`: time-series risk scoring microservice (FastAPI + trainable model).
+
+Quick pointers:
+
+```bash
+cd edge_vision_qos
+python3 -m app.run --source path/to/video.mp4 --target-fps 15
+```
+
+```bash
+cd predictive_maintenance_api
+python3 -m app.train --data data/cmapss_like.csv --output-dir artifacts
+uvicorn app.main:app --reload --port 8090
+```

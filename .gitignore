@@ -19,3 +19,4 @@ experiments/rl_policy.json
 *.bag
 *.db
 .DS_Store
+runs/

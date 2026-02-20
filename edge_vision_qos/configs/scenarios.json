@@ -1,0 +1,14 @@
+{
+  "normal": {
+    "simulated_inference_delay_ms": 0.0,
+    "force_blur": false
+  },
+  "crowded": {
+    "simulated_inference_delay_ms": 35.0,
+    "force_blur": false
+  },
+  "low_light": {
+    "simulated_inference_delay_ms": 10.0,
+    "force_blur": true
+  }
+}

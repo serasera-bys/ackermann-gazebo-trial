@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+artifacts/*.json
+artifacts/*.jsonl
+artifacts/*.csv
+artifacts/*.onnx
+yolov8n.pt
