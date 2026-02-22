@@ -14,6 +14,9 @@ experiments/episode_metrics.jsonl
 experiments/rl_dataset*.jsonl
 experiments/rl_dataset.jsonl.bak_*
 experiments/rl_policy.json
+experiments/semantic_rl_dataset.jsonl
+experiments/semantic_rl_policy.json
+experiments/results/semantic_explorer/
 
 *.log
 *.bag

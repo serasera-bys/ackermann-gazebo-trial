@@ -272,6 +272,35 @@ Quick links:
 - `predictive_maintenance_api/README.md`
 - `predictive_maintenance_api/docs/results.md`
 
+## Semantic RL Explorer (RViz Map + Camera Fusion)
+
+New ROS2 stack for autonomous exploration with camera semantics and offline RL frontier scoring:
+
+- `hybrid_nav_semantic_perception`
+- `hybrid_nav_frontier_explorer`
+- `hybrid_nav_semantic_rl`
+- `hybrid_nav_autonomy_bringup`
+
+Launch:
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+REPO_ROOT=~/ros2_ws/src/hybrid_nav_robot
+ros2 launch hybrid_nav_autonomy_bringup semantic_autonomy.launch.py \
+  model_path:=$REPO_ROOT/edge_vision_qos/artifacts/yolov8n.onnx \
+  policy_file:=$REPO_ROOT/experiments/semantic_rl_policy.json
+```
+
+Artifacts:
+
+- dataset: `experiments/semantic_rl_dataset.jsonl`
+- policy: `experiments/semantic_rl_policy.json`
+- runtime metrics: `experiments/results/semantic_explorer/run_<timestamp>/metrics.json`
+- semantic map export: `experiments/results/semantic_explorer/run_<timestamp>/semantic_map.json`
+- results template: `docs/results_semantic.md`
+
 ## VHDL companion addon
 
 Digital-design companion artifact (not in runtime loop yet):
