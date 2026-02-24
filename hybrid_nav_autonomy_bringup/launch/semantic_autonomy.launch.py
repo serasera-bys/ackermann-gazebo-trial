@@ -45,6 +45,31 @@ def generate_launch_description():
     policy_file = LaunchConfiguration("policy_file")
     use_rviz = LaunchConfiguration("use_rviz")
     enable_dataset_collection = LaunchConfiguration("enable_dataset_collection")
+    score_mode = LaunchConfiguration("score_mode")
+    rule_bootstrap_sec = LaunchConfiguration("rule_bootstrap_sec")
+    rule_bootstrap_goal_count = LaunchConfiguration("rule_bootstrap_goal_count")
+    safety_allow_reverse = LaunchConfiguration("safety_allow_reverse")
+    safety_max_reverse_speed = LaunchConfiguration("safety_max_reverse_speed")
+    scan_input_topic = LaunchConfiguration("scan_input_topic")
+    scan_nav_topic = LaunchConfiguration("scan_nav_topic")
+    use_scan_retimestamp = LaunchConfiguration("use_scan_retimestamp")
+    scan_stamp_offset_sec = LaunchConfiguration("scan_stamp_offset_sec")
+    scan_max_input_age_sec = LaunchConfiguration("scan_max_input_age_sec")
+
+    scan_retimestamp = Node(
+        package="hybrid_nav_autonomy_bringup",
+        executable="scan_retimestamp_node",
+        name="scan_retimestamp",
+        output="screen",
+        parameters=[{
+            "use_sim_time": True,
+            "input_topic": scan_input_topic,
+            "output_topic": scan_nav_topic,
+            "restamp_enabled": use_scan_retimestamp,
+            "stamp_offset_sec": scan_stamp_offset_sec,
+            "max_input_age_sec": scan_max_input_age_sec,
+        }],
+    )
 
     ackermann_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -56,6 +81,7 @@ def generate_launch_description():
             "odom_topic": "/ackermann_steering_controller/odometry",
             "world": world,
             "cmd_vel_input_topic": "/cmd_vel_safe",
+            "use_sim_time": "True",
         }.items(),
     )
 
@@ -67,8 +93,9 @@ def generate_launch_description():
             "slam": "True",
             "use_localization": "True",
             "use_sim_time": "True",
-            "autostart": "True",
+            "autostart": "true",
             "use_composition": "False",
+            "use_respawn": "True",
             "params_file": nav2_params,
         }.items(),
     )
@@ -79,14 +106,19 @@ def generate_launch_description():
         name="semantic_safety_layer",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "input_topic": "/cmd_vel",
             "output_topic": "/cmd_vel_safe",
-            "scan_topic": "/scan",
-            "stop_distance": 0.6,
-            "hard_stop_distance": 0.35,
+            "scan_topic": scan_nav_topic,
+            "stop_distance": 0.50,
+            "hard_stop_distance": 0.30,
             "scan_timeout_sec": 0.5,
             "max_linear_speed": 1.0,
+            "max_reverse_speed": safety_max_reverse_speed,
             "max_angular_speed": 0.8,
+            "allow_reverse": safety_allow_reverse,
+            "front_collision_half_angle_rad": 0.45,
+            "rear_collision_half_angle_rad": 0.45,
         }],
     )
 
@@ -96,6 +128,7 @@ def generate_launch_description():
         name="semantic_detector",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "image_topic": "/camera/rgb/image_raw",
             "detections_topic": "/semantic/detections",
             "debug_image_topic": "/semantic/debug_image",
@@ -111,6 +144,7 @@ def generate_launch_description():
         name="semantic_projection",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "detections_topic": "/semantic/detections",
             "depth_topic": "/camera/depth/image_raw",
             "camera_info_topic": "/camera/rgb/camera_info",
@@ -126,6 +160,7 @@ def generate_launch_description():
         name="semantic_map",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "map_topic": "/map",
             "projected_objects_topic": "/semantic/projected_objects_json",
             "semantic_grid_topic": "/semantic/grid",
@@ -140,14 +175,23 @@ def generate_launch_description():
         name="frontier_extractor",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "map_topic": "/map",
             "odom_topic": "/ackermann_steering_controller/odometry",
+            "status_topic": "/exploration/status",
             "candidates_topic": "/exploration/frontier_candidates",
             "candidates_json_topic": "/exploration/frontier_candidates_json",
             "markers_topic": "/exploration/frontier_candidates_markers",
             "publish_rate_hz": 1.0,
             "min_cluster_size": 3,
             "max_candidates": 60,
+            "require_reachable": True,
+            "clearance_cells": 3,
+            "goal_backoff_cells": 3,
+            "min_goal_dist": 0.70,
+            "max_goal_dist": 5.5,
+            "failed_goal_blacklist_radius": 0.7,
+            "failed_goal_blacklist_ttl_sec": 45.0,
         }],
     )
 
@@ -157,14 +201,18 @@ def generate_launch_description():
         name="semantic_rl_decider",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "frontier_candidates_json_topic": "/exploration/frontier_candidates_json",
             "selected_goal_topic": "/semantic_rl/selected_goal",
             "candidate_scores_topic": "/semantic_rl/candidate_scores_json",
             "semantic_grid_topic": "/semantic/grid",
             "semantic_observations_topic": "/semantic/object_observations_json",
             "odom_topic": "/ackermann_steering_controller/odometry",
-            "scan_topic": "/scan",
+            "scan_topic": scan_nav_topic,
             "policy_file": policy_file,
+            "score_mode": score_mode,
+            "rule_bootstrap_sec": rule_bootstrap_sec,
+            "rule_bootstrap_goal_count": rule_bootstrap_goal_count,
             "goal_cooldown_sec": 1.0,
             "min_goal_distance": 0.35,
             "min_robot_goal_distance": 0.35,
@@ -180,20 +228,30 @@ def generate_launch_description():
         name="exploration_manager",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "selected_goal_topic": "/semantic_rl/selected_goal",
             "frontier_candidates_topic": "/exploration/frontier_candidates",
             "status_topic": "/exploration/status",
-            "goal_timeout_sec": 30.0,
-            "goal_reissue_cooldown_sec": 3.0,
+            "cmd_vel_topic": "/cmd_vel",
+            "goal_timeout_sec": 50.0,
+            "goal_reissue_cooldown_sec": 5.0,
             "use_frontier_fallback": True,
             "enable_adaptive_frontier_fallback": True,
-            "failure_streak_forced_fallback": 2,
+            "failure_streak_forced_fallback": 3,
             "forced_fallback_duration_sec": 20.0,
             "fallback_goal_min_separation": 0.5,
-            "max_fallback_goal_distance": 4.0,
+            "max_fallback_goal_distance": 6.0,
             "enable_stuck_cancel": True,
-            "stuck_no_progress_timeout_sec": 12.0,
-            "stuck_progress_distance": 0.08,
+            "stuck_no_progress_timeout_sec": 35.0,
+            "stuck_no_progress_timeout_recovery_sec": 35.0,
+            "stuck_progress_distance": 0.03,
+            "stuck_goal_progress_epsilon": 0.03,
+            "stuck_rotation_angular_threshold": 0.30,
+            "stuck_rotation_linear_max": 0.06,
+            "failed_goal_blacklist_radius": 0.7,
+            "failed_goal_blacklist_ttl_sec": 45.0,
+            "nav_auto_startup_if_unavailable": True,
+            "nav_startup_retry_sec": 12.0,
         }],
     )
 
@@ -204,6 +262,7 @@ def generate_launch_description():
         output="screen",
         condition=IfCondition(enable_dataset_collection),
         parameters=[{
+            "use_sim_time": True,
             "scores_topic": "/semantic_rl/candidate_scores_json",
             "status_topic": "/exploration/status",
             "scenario_label": "house_sim",
@@ -217,6 +276,7 @@ def generate_launch_description():
         name="semantic_run_metrics",
         output="screen",
         parameters=[{
+            "use_sim_time": True,
             "map_topic": "/map",
             "detections_topic": "/semantic/detections",
             "status_topic": "/exploration/status",
@@ -249,9 +309,20 @@ def generate_launch_description():
             "policy_file",
             default_value=str(repo_root / "experiments" / "semantic_rl_policy.json"),
         ),
+        DeclareLaunchArgument("score_mode", default_value="rule_only"),
+        DeclareLaunchArgument("rule_bootstrap_sec", default_value="120.0"),
+        DeclareLaunchArgument("rule_bootstrap_goal_count", default_value="16"),
+        DeclareLaunchArgument("safety_allow_reverse", default_value="true"),
+        DeclareLaunchArgument("safety_max_reverse_speed", default_value="0.08"),
+        DeclareLaunchArgument("scan_input_topic", default_value="/scan"),
+        DeclareLaunchArgument("scan_nav_topic", default_value="/scan_nav"),
+        DeclareLaunchArgument("use_scan_retimestamp", default_value="true"),
+        DeclareLaunchArgument("scan_stamp_offset_sec", default_value="0.0"),
+        DeclareLaunchArgument("scan_max_input_age_sec", default_value="0.25"),
         DeclareLaunchArgument("enable_dataset_collection", default_value="false"),
         DeclareLaunchArgument("use_rviz", default_value="true"),
         ackermann_launch,
+        scan_retimestamp,
         nav2_launch,
         safety_layer,
         detector,

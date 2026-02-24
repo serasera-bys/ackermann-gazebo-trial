@@ -12,6 +12,7 @@ setup(
         (f"share/{package_name}", ["package.xml"]),
         (f"share/{package_name}/launch", glob("launch/*.launch.py")),
         (f"share/{package_name}/config", glob("config/*.yaml")),
+        (f"share/{package_name}/config/bt", glob("config/bt/*.xml")),
         (f"share/{package_name}/worlds", glob("worlds/*.sdf")),
         (f"share/{package_name}/rviz", glob("rviz/*.rviz")),
     ],
@@ -25,6 +26,7 @@ setup(
     entry_points={
         "console_scripts": [
             "semantic_run_metrics_node = hybrid_nav_autonomy_bringup.semantic_run_metrics_node:main",
+            "scan_retimestamp_node = hybrid_nav_autonomy_bringup.scan_retimestamp_node:main",
         ],
     },
 )

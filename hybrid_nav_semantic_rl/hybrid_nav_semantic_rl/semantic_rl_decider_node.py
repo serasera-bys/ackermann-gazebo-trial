@@ -10,6 +10,7 @@ import rclpy
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import OccupancyGrid, Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
@@ -83,6 +84,9 @@ class SemanticRLDeciderNode(Node):
         self.declare_parameter("allow_close_goal_fallback", True)
         self.declare_parameter("close_goal_min_distance", 0.18)
         self.declare_parameter("allow_duplicate_goal_fallback", True)
+        self.declare_parameter("score_mode", "auto")
+        self.declare_parameter("rule_bootstrap_sec", 90.0)
+        self.declare_parameter("rule_bootstrap_goal_count", 12)
         self.declare_parameter("class_weights_json", "{\"class_0\": 1.0, \"class_2\": 0.7}")
         self.declare_parameter("avoid_distance", 1.2)
         self.declare_parameter("free_gain_scale", 40.0)
@@ -107,6 +111,12 @@ class SemanticRLDeciderNode(Node):
         self.allow_close_goal_fallback = bool(self.get_parameter("allow_close_goal_fallback").value)
         self.close_goal_min_distance = float(self.get_parameter("close_goal_min_distance").value)
         self.allow_duplicate_goal_fallback = bool(self.get_parameter("allow_duplicate_goal_fallback").value)
+        self.score_mode = str(self.get_parameter("score_mode").value).strip().lower()
+        if self.score_mode not in ("auto", "rule_only", "policy_only"):
+            self.get_logger().warn(f"Unsupported score_mode='{self.score_mode}', falling back to 'auto'")
+            self.score_mode = "auto"
+        self.rule_bootstrap_sec = max(0.0, float(self.get_parameter("rule_bootstrap_sec").value))
+        self.rule_bootstrap_goal_count = max(0, int(self.get_parameter("rule_bootstrap_goal_count").value))
         self.class_weights = parse_class_weights(str(self.get_parameter("class_weights_json").value))
         self.avoid_distance = float(self.get_parameter("avoid_distance").value)
         self.free_gain_scale = float(self.get_parameter("free_gain_scale").value)
@@ -127,6 +137,9 @@ class SemanticRLDeciderNode(Node):
         self.last_goal_sec = 0.0
         self.last_goal_x = float("nan")
         self.last_goal_y = float("nan")
+        self.goals_published = 0
+        self.start_sec = self._now_sec()
+        self._last_scoring_mode = ""
 
         self.policy_weights: dict[str, float] = {}
         self.policy_bias = 0.0
@@ -144,11 +157,15 @@ class SemanticRLDeciderNode(Node):
         self.create_subscription(String, semantic_obs_topic, self.on_semantic_observations, 10)
         self.create_subscription(Odometry, odom_topic, self.on_odom, 10)
         self.create_subscription(LaserScan, scan_topic, self.on_scan, 10)
+        self.add_on_set_parameters_callback(self._on_set_parameters)
         self.create_service(Trigger, "/semantic_rl/reload_policy", self.on_reload_policy)
         self.create_timer(1.0, self._load_policy)
 
         self.get_logger().info(
-            f"semantic_rl_decider started: candidates={candidates_topic}, policy={self.policy_file}"
+            "semantic_rl_decider started: "
+            f"candidates={candidates_topic}, policy={self.policy_file}, "
+            f"score_mode={self.score_mode}, rule_bootstrap_sec={self.rule_bootstrap_sec:.1f}, "
+            f"rule_bootstrap_goal_count={self.rule_bootstrap_goal_count}"
         )
 
     def on_semantic_grid(self, msg: OccupancyGrid) -> None:
@@ -198,6 +215,12 @@ class SemanticRLDeciderNode(Node):
         if not isinstance(candidates, list) or not candidates:
             return
 
+        use_policy, mode_reason = self._select_scoring_mode()
+        mode_name = "policy" if use_policy else "rule"
+        if mode_name != self._last_scoring_mode:
+            self.get_logger().info(f"Scoring mode switched to '{mode_name}' ({mode_reason})")
+            self._last_scoring_mode = mode_name
+
         scored: list[dict[str, Any]] = []
         for cand in candidates:
             x = float(cand.get("x", 0.0))
@@ -219,7 +242,7 @@ class SemanticRLDeciderNode(Node):
             }
 
             pseudo = rule_score(features, self.rule_w1, self.rule_w2, self.rule_w3, self.rule_w4, self.rule_w5)
-            if self.policy_loaded:
+            if use_policy:
                 score = linear_policy_score(features, self.policy_weights, self.policy_bias)
             else:
                 score = pseudo
@@ -244,6 +267,8 @@ class SemanticRLDeciderNode(Node):
                 "frame_id": frame_id,
                 "stamp_sec": self._now_sec(),
                 "policy_loaded": self.policy_loaded,
+                "scoring_mode": mode_name,
+                "scoring_reason": mode_reason,
                 "candidates": scored,
             }
         )
@@ -324,6 +349,7 @@ class SemanticRLDeciderNode(Node):
         self.last_goal_sec = self._now_sec()
         self.last_goal_x = float(best["x"])
         self.last_goal_y = float(best["y"])
+        self.goals_published += 1
 
     def _semantic_novelty(self, x: float, y: float) -> float:
         if self.semantic_grid is None:
@@ -362,6 +388,41 @@ class SemanticRLDeciderNode(Node):
     def _cooldown_elapsed(self) -> bool:
         now = self._now_sec()
         return (now - self.last_goal_sec) >= self.goal_cooldown_sec
+
+    def _on_set_parameters(self, params) -> SetParametersResult:
+        for param in params:
+            if param.name == "score_mode":
+                value = str(param.value).strip().lower()
+                if value not in ("auto", "rule_only", "policy_only"):
+                    return SetParametersResult(successful=False, reason="score_mode must be auto|rule_only|policy_only")
+                self.score_mode = value
+                # Force one info log on next scoring cycle.
+                self._last_scoring_mode = ""
+            elif param.name == "rule_bootstrap_sec":
+                self.rule_bootstrap_sec = max(0.0, float(param.value))
+            elif param.name == "rule_bootstrap_goal_count":
+                self.rule_bootstrap_goal_count = max(0, int(param.value))
+        return SetParametersResult(successful=True)
+
+    def _select_scoring_mode(self) -> tuple[bool, str]:
+        if self.score_mode == "rule_only":
+            return False, "score_mode=rule_only"
+
+        if self.score_mode == "policy_only":
+            if self.policy_loaded:
+                return True, "score_mode=policy_only"
+            return False, "policy_missing_policy_only_fallback_rule"
+
+        # auto mode: rule-first warmup, then RL policy when ready.
+        if not self.policy_loaded:
+            return False, "policy_not_loaded"
+
+        elapsed = self._now_sec() - self.start_sec
+        if elapsed < self.rule_bootstrap_sec:
+            return False, f"bootstrap_time<{self.rule_bootstrap_sec:.1f}s"
+        if self.goals_published < self.rule_bootstrap_goal_count:
+            return False, f"bootstrap_goals<{self.rule_bootstrap_goal_count}"
+        return True, "bootstrap_complete"
 
     def _load_policy(self, force: bool = False) -> None:
         path = Path(self.policy_file)
