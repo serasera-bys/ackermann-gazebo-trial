@@ -1,6 +1,41 @@
-# Hybrid Autonomous Mobile Robot (ROS2)
+# Hybrid Autonomous Mobile Robot (ROS2 + Gazebo)
 
-A focused ROS2 project that compares a rule-based planner vs an offline-trained RL planner under a safety layer, using the Ackermann simulation stack.
+Gazebo-based autonomous Ackermann robot project on ROS2 Jazzy.  
+This repo contains end-to-end simulation stacks, including:
+- Gazebo world + Ackermann robot/control
+- Nav2 + SLAM exploration stack
+- Safety filtering and recovery tuning
+- Rule-based and offline RL planner experiments
+
+Current stable demo mode is **frontier exploration on Gazebo** (semantic/RL decider disabled during stabilization), but the repository still includes full semantic/RL modules.
+
+## Current Gazebo exploration stack (recommended)
+
+Launch the stabilized frontier exploration pipeline:
+
+```bash
+WS_ROOT=~/ros2_ws
+cd "$WS_ROOT"
+colcon build --packages-select \
+  hybrid_nav_autonomy_bringup \
+  hybrid_nav_frontier_explorer \
+  hybrid_nav_safety_layer \
+  ackermann_bringup \
+  ackermann_control
+
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch hybrid_nav_autonomy_bringup frontier_stable.launch.py gz_headless:=false
+```
+
+Pipeline:
+
+`Gazebo + /clock -> scan_retimestamp -> SLAM/Nav2 -> frontier_extractor -> exploration_manager -> safety_layer -> ackermann_control`
+
+Useful options:
+- headless mode: `gz_headless:=true`
+- show RViz: `use_rviz:=true`
+- force reverse off (default): `safety_allow_reverse:=false`
 
 ## What it does
 
